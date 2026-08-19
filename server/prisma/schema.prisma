@@ -1,0 +1,124 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id String @id @default(uuid())
+  name String
+  email String @unique
+  password String
+  phone String?
+  avatar String?
+  role UserRole @default(User)
+
+  products Product[]
+  reviews   Review[]
+  wishlists Wishlist[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email, role])
+  @@map("users")
+}
+
+enum UserRole{
+  User
+  Seller
+  Admin
+}
+
+model Category {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  description String?
+  isDeleted Boolean   @default(false)
+
+  products  Product[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("categories")
+}
+
+model Product {
+  id          String @id @default(uuid())
+  title       String
+  description String?
+  price       Int
+  stock       Int
+  image       String?
+  categoryId  String
+  userId      String
+
+  isDeleted   Boolean       @default(false)
+  status      ProductStatus @default(AVAILABLE)
+
+  category    Category      @relation(fields: [categoryId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+
+  reviews   Review[]
+  wishlists Wishlist[]
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([categoryId, status, title])
+  @@map("products")
+}
+
+enum ProductStatus {
+  AVAILABLE
+  OUT_OF_STOCK
+  DISCONTINUED
+}
+
+model Review {
+  id        String  @id @default(uuid())
+  rating    Int
+  comment   String?
+
+  userId    String
+  productId String
+
+  user    User    @relation(fields: [userId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  isDeleted Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, productId])
+  @@map("reviews")
+}
+
+model Wishlist {
+  id        String   @id @default(uuid())
+
+  userId    String
+  productId String
+
+  user      User     @relation(fields: [userId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
+
+  isDeleted Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, productId])
+  @@index([userId, productId])
+  @@map("wishlists")
+}
