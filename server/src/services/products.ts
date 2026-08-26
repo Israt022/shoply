@@ -95,11 +95,14 @@ router.post("/", async (req: Request, res: Response) => {
   }
 });
 
-
 // GET All Products
 router.get("/", async (req, res) => {
   try {
-    const data = await prisma.product.findMany();
+    const data = await prisma.product.findMany({
+      where: {
+        isDeleted: false,
+      },
+    });
 
     res.json({
       success: true,
@@ -109,7 +112,7 @@ router.get("/", async (req, res) => {
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: "Error creating product",
+      message: "Error fetching products",
       error: error.message,
     });
   }
@@ -250,47 +253,60 @@ router.put("/:id", async (
 });
 
 // DELETE - Product
-router.delete("/:id", async (
-  req: Request<{ id: string }>,
-  res: Response
-) => {
-  try {
-    const { id } = req.params;
+router.delete(
+  "/:id",
+  async (req: Request<{ id: string }>, res: Response) => {
+    try {
+      const { id } = req.params;
 
-    const existingProduct = await prisma.product.findFirst({
-      where: {
-        id,
-        isDeleted: false,
-      },
-    });
+      const existingProduct = await prisma.product.findFirst({
+        where: {
+          id,
+          isDeleted: false,
+        },
+      });
 
-    if (!existingProduct) {
-      return res.status(404).json({
+      if (!existingProduct) {
+        return res.status(404).json({
+          success: false,
+          message: "Product not found",
+        });
+      }
+
+      // Product + related Wishlists soft delete
+      const [deletedProduct] = await prisma.$transaction([
+        prisma.product.update({
+          where: {
+            id,
+          },
+          data: {
+            isDeleted: true,
+          },
+        }),
+
+        prisma.wishlist.updateMany({
+          where: {
+            productId: id,
+            isDeleted: false,
+          },
+          data: {
+            isDeleted: true,
+          },
+        }),
+      ]);
+
+      return res.status(200).json({
+        success: true,
+        message: "Product deleted successfully",
+        data: deletedProduct,
+      });
+    } catch (error: any) {
+      return res.status(500).json({
         success: false,
-        message: "Product not found",
+        message: "Error deleting product",
+        error: error.message,
       });
     }
-
-    const deletedProduct = await prisma.product.update({
-      where: {
-        id,
-      },
-      data: {
-        isDeleted: true,
-      },
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: "Product deleted successfully",
-      data: deletedProduct,
-    });
-  } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: "Error deleting product",
-      error: error.message,
-    });
   }
-});
+);
 export default router;
