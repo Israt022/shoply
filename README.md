@@ -29,8 +29,8 @@ The project is built with a clean separation of concerns: a **Next.js 15** clien
 
 | Service | URL |
 |---------|-----|
-| 🌐 Client (Frontend) | *(deploy to Vercel)* |
-| 🔗 Server (API) | *(deploy to Vercel / Railway)* |
+| 🌐 Client (Frontend) | **https://shoply-eur2.vercel.app/** |
+| 🔗 Server (API) | **https://shoply-murex.vercel.app/**|
 
 ---
 
